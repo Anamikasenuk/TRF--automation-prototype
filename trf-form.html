@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ASOS TRF Form</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: the TRF as a supplier sees it in PLM, every field tagged with its source; a sticky source panel maps the PO into the form. */
+:root{
+  --bg:#ffffff; --fg:#111111; --muted:#5f5f5c; --line:#e3e2de; --panel:#f6f5f2; --ink:#111111; --ink-fg:#ffffff;
+  --po:#1d6b46; --po-bg:#e3f3ea; --plm:#1f5fa8; --plm-bg:#e8f0fa; --rule:#5b3fb0; --rule-bg:#efebfb;
+  --sup:#8a5a00; --sup-bg:#fbf1dc; --pend:#55554f; --pend-bg:#efeeea; --bad:#b0281f; --bad-bg:#fbe6e4;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif; --body:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121211; --fg:#f2f1ed; --muted:#a3a29c; --line:#2d2c29; --panel:#1b1a18; --ink:#f2f1ed; --ink-fg:#121211;
+  --po:#86d8a9; --po-bg:#14301f; --plm:#8fbcf0; --plm-bg:#16263a; --rule:#c0b0f5; --rule-bg:#241d3d;
+  --sup:#f0c46c; --sup-bg:#33270f; --pend:#c4c3bd; --pend-bg:#2a2926; --bad:#f39a92; --bad-bg:#3a1714; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121211; --fg:#f2f1ed; --muted:#a3a29c; --line:#2d2c29; --panel:#1b1a18; --ink:#f2f1ed; --ink-fg:#121211;
+  --po:#86d8a9; --po-bg:#14301f; --plm:#8fbcf0; --plm-bg:#16263a; --rule:#c0b0f5; --rule-bg:#241d3d;
+  --sup:#f0c46c; --sup-bg:#33270f; --pend:#c4c3bd; --pend-bg:#2a2926; --bad:#f39a92; --bad-bg:#3a1714; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:36px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;line-height:1.05}
+h2{font-size:22px;font-weight:800}
+h3{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+p{margin:0}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lede{max-width:74ch;color:var(--muted)}
+header{display:flex;flex-direction:column;gap:10px;border-bottom:3px solid var(--ink);padding-bottom:20px}
+.proto{font-family:var(--mono);font-size:12px;border:1px solid var(--ink);padding:3px 8px;width:max-content;max-width:100%}
+/* source filter strip */
+.srcbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--ink)}
+.srcbar button{all:unset;cursor:pointer;padding:12px 14px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.srcbar button:last-child{border-right:0}
+.srcbar button b{font-family:var(--display);font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.srcbar button span{font-size:13px;color:var(--muted)}
+.srcbar button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:-3px}
+.srcbar button:focus-visible{outline:3px solid var(--plm);outline-offset:-3px}
+.srcbar .k{display:inline-block;width:10px;height:10px;margin-right:6px;vertical-align:0}
+/* layout */
+.bench{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:28px;align-items:start}
+@media (max-width:960px){.bench{grid-template-columns:minmax(0,1fr)}}
+.form{border:3px solid var(--ink);min-width:0}
+.form-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 20px;padding:16px 18px;border-bottom:1px solid var(--ink)}
+.form-top .t{font-family:var(--display);font-weight:800;font-size:20px}
+.form-top .n{font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+.sec{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.sec:last-child{border-bottom:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 20px}
+.f{display:flex;flex-direction:column;gap:3px;min-width:0;padding:8px 0;border-top:1px dashed var(--line);transition:opacity .15s}
+.f.dim{opacity:.22}
+.f .l{font-size:12.5px;color:var(--muted);display:flex;gap:6px;align-items:center;justify-content:space-between}
+.f .v{font-size:14px;overflow-wrap:anywhere}
+.f .v i{color:var(--muted)}
+.f .p{font-family:var(--mono);font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.f select,.f input{font:14px var(--body);color:var(--fg);background:var(--bg);border:1px solid var(--sup);padding:6px 8px;width:100%;min-width:0}
+.f select:focus-visible,.f input:focus-visible{outline:2px solid var(--plm);outline-offset:1px}
+.f.empty select,.f.empty input{background:var(--sup-bg)}
+.f.locked .v::before{content:"🔒︎";font-size:11px;margin-right:6px;color:var(--muted)}
+.src{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:2px;letter-spacing:.03em;flex:none;white-space:nowrap}
+.s-po{background:var(--po-bg);color:var(--po)} .s-plm{background:var(--plm-bg);color:var(--plm)} .s-rule{background:var(--rule-bg);color:var(--rule)} .s-sup{background:var(--sup-bg);color:var(--sup)} .s-pend{background:var(--pend-bg);color:var(--pend)}
+.sample{font-family:var(--mono);font-size:10px;color:var(--muted);border:1px dashed var(--muted);padding:0 4px;margin-left:6px;font-style:normal}
+.dd{font-size:11.5px;color:var(--muted)}
+/* side */
+.side{display:flex;flex-direction:column;gap:16px;min-width:0;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:960px){.side{position:static}}
+.card{border:1px solid var(--line);display:flex;flex-direction:column}
+.card .h{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.card .h b{font-family:var(--display);font-size:15px}
+.map{list-style:none;margin:0;padding:6px 0;font-size:13px}
+.map li{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);gap:6px;padding:5px 14px;align-items:baseline}
+.map li .a{color:var(--muted);overflow-wrap:anywhere} .map li .a b{color:var(--fg);font-weight:500;display:block}
+.map li .ar{color:var(--muted)}
+.map li .to{overflow-wrap:anywhere}
+.map li.note{display:block;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:8px}
+.prog{height:8px;display:flex;background:var(--line)}
+.prog i{display:block;height:100%}
+.btn{font:700 14px var(--display);letter-spacing:.02em;background:var(--ink);color:var(--ink-fg);border:1px solid var(--ink);padding:10px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--fg)}
+.btn:focus-visible{outline:2px solid var(--plm);outline-offset:2px}
+/* tables */
+.tablewrap{overflow-x:auto;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--panel);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.opts{font-size:13.5px}
+td.opts span{display:inline-block;border:1px solid var(--line);padding:1px 7px;margin:0 4px 4px 0;background:var(--panel);white-space:nowrap}
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.box{border:1px solid var(--line);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.box h3{font-size:12px}
+footer{font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <span class="proto">PROTOTYPE · STAGE 1 · FABRIC TRF IN CENTRIC PLM</span>
+  <span class="eyebrow">Example: PO 500037765601 · Option 157382210</span>
+  <h1>ASOS TRF Form</h1>
+  <p class="lede">How the fabric TRF looks to a supplier in PLM. Every field is tagged with where it comes from: the PO, PLM, a rule, a supplier drop-down or supplier text. Click a source below to highlight its fields.</p>
+</header>
+
+<section class="srcbar" id="srcbar" aria-label="Filter fields by source"></section>
+
+<section class="bench">
+  <div class="form">
+    <div class="form-top">
+      <div><div class="t">ASOS Testing Request Form (TRF) — Summary</div>
+      <div class="n">TRF Number: issued on submission &nbsp;|&nbsp; Document No: assigned by lab &nbsp;|&nbsp; Date: <span id="today"></span></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="fill">Fill as supplier</button><button class="btn ghost" id="clear">Clear supplier fields</button></div>
+    </div>
+    <div id="form"></div>
+  </div>
+  <aside class="side">
+    <div class="card">
+      <div class="h"><b>Completion</b><span class="eyebrow" id="pct"></span></div>
+      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:8px"><div class="prog" id="prog" aria-hidden="true"></div><div id="progtxt" style="font-size:13.5px"></div></div>
+    </div>
+    <div class="card">
+      <div class="h"><b>From PO 500037765601</b><span class="src s-po">PO</span></div>
+      <ul class="map">
+        <li><span class="a"><b>PO Number</b>500037765601</span><span class="ar">→</span><span class="to">PO Number</span></li>
+        <li><span class="a"><b>Option ID</b>157382210</span><span class="ar">→</span><span class="to">Option ID</span></li>
+        <li><span class="a"><b>Description</b>Miss Selfridge ribbed cardigan and cami set in buttermilk</span><span class="ar">→</span><span class="to">Product Description</span></li>
+        <li><span class="a"><b>Brand</b>MISS SELF</span><span class="ar">→</span><span class="to">Brand: Miss Selfridge</span></li>
+        <li><span class="a"><b>Buying Group No</b>534 - Miss Selfridge WB</span><span class="ar">→</span><span class="to">Department, and Category by rule</span></li>
+        <li><span class="a"><b>Reporting Colour</b>YELLOW</span><span class="ar">→</span><span class="to">Colour(s)</span></li>
+        <li><span class="a"><b>Supplier Details</b>Indochine International Hong Kong</span><span class="ar">→</span><span class="to">Supplier Name</span></li>
+        <li><span class="a"><b>Factory Name</b>Enra</span><span class="ar">→</span><span class="to">Factory Name</span></li>
+        <li><span class="a"><b>Factory ID</b>F106375</span><span class="ar">→</span><span class="to">Factory ID</span></li>
+        <li class="note">Also on the PO but not on the TRF: Expected Handover Date 10/08/2026 (feeds the compliance view), shipping point T&amp;R Istanbul, FOB, sizes and quantities.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="h"><b>From PLM</b><span class="src s-plm">PLM</span></div>
+      <ul class="map">
+        <li><span class="a"><b>Material Library</b>Composition, Weight (Before Wash), Mill, Mill Country, ASOS Material Ref, Supplier/Mill Ref, Description, Material Type, Construction</span><span class="ar">→</span><span class="to">Claims and component fields</span></li>
+        <li><span class="a"><b>BOM</b>Element/Component</span><span class="ar">→</span><span class="to">Element/Component</span></li>
+        <li><span class="a"><b>Attributes</b>Website Gender, Sustainable Design</span><span class="ar">→</span><span class="to">Division, Circular collection (rules)</span></li>
+        <li><span class="a"><b>Order Split</b>UK / EU PO Priority</span><span class="ar">→</span><span class="to">Program (rule)</span></li>
+        <li><span class="a"><b>Supplier record</b>ID, login email</span><span class="ar">→</span><span class="to">Supplier ID, Email</span></li>
+        <li class="note">Material Library values for this option were not shared, so they show as samples.</li>
+      </ul>
+    </div>
+  </aside>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:12px">
+  <h2>Drop-down lists to set up in PLM</h2>
+  <p class="lede">Every list the form needs, with the values from our field review. The supplier never types into these.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Field</th><th>Who sets it</th><th>Values</th><th>Where the list comes from</th></tr></thead>
+    <tbody id="dd"></tbody>
+  </table></div>
+</section>
+
+<section style="display:flex;flex-direction:column;gap:12px">
+  <h2>What this PO shows</h2>
+  <div class="notes">
+    <div class="box"><h3>Buying group needs its code removed</h3>The PO shows "534 - Miss Selfridge WB". The engine drops "534 - " before matching, so Miss Selfridge WB is found on the clothing list and Category becomes Clothing.</div>
+    <div class="box"><h3>Brand is abbreviated</h3>The PO says "MISS SELF". The engine maps it to the drop-down value Miss Selfridge, so the TRF and BV's KPI data use one spelling.</div>
+    <div class="box"><h3>Two colours</h3>Reporting Colour is YELLOW, Website Colour is buttermilk. Our sheet uses Reporting Colour; the prototype shows "YELLOW (buttermilk)" so the lab can match the physical sample.</div>
+    <div class="box"><h3>One TRF per option, not per size</h3>The PO lists four SKUs (UK 4 to 10) under option 157382210. The TRF is raised once per option and fabric.</div>
+    <div class="box"><h3>No composition on the PO</h3>Fibre content and weight are not on the PO, so they come from the Material Library. Our sheet already suggests adding composition to the PO.</div>
+    <div class="box"><h3>Supplier vs factory</h3>Supplier is Indochine International Hong Kong; the factory is Enra (F106375). Both come from the PO, so neither is typed.</div>
+  </div>
+</section>
+
+<footer>PO values are from PO 500037765601 as shared. Material Library, BOM, attribute and supplier-record values are samples, marked "sample". Lab locations and wash care lists are samples until taken from the testing manual. Proposed Test Standard rule needs compliance sign-off.</footer>
+</div>
+
+<script>
+const LABS=["BV Istanbul, Türkiye","BV Hong Kong","BV Shanghai, China","BV Dhaka, Bangladesh","BV Gurgaon, India","BV Ho Chi Minh City, Vietnam"];
+const SERVICE=["Regular – 3 days","Shuttle – Next day","Same day"];
+const CARE=["Machine wash 30°C, gentle, dry flat","Machine wash 30°C, line dry","Hand wash cold, dry flat","Dry clean only"];
+const STAGE=["Base","Bulk","Bulk Additional Colour"];
+const YN=["Yes","No"];
+const PAYER=["Supplier","Applicant","ASOS","Other"];
+const COUNTRIES=["China","Hong Kong","Türkiye","United Kingdom","Bangladesh","India","Vietnam","Pakistan"];
+const STD=["ASOS-SL-PTCL-00291.05 Table 1 Colour fastness V27 + ASOS-SL-PTCL-00298.04 Table 5 Weft knit performance V29","Woven performance table (code to confirm)","Coated fabric table (code to confirm)"];
+const BRANDS=["ASOS Design","Topshop","Topman","Miss Selfridge","Reclaimed Vintage","Collusion","Adidas"];
+
+/* field model: src = po | plm | rule | sup | pend ; input = list (drop-down) or "text" */
+const F=(label,src,value,from,extra)=>Object.assign({label,src,value,from},extra||{});
+const SECTIONS=[
+ {t:"General information", f:[
+  F("Lab Location","sup","","Supplier selects",{key:"lab",input:LABS,list:"Testing manual"}),
+  F("Service Requested","sup","","Supplier selects",{key:"service",input:SERVICE,list:"Field review"}),
+  F("Program","rule","ASOS General Testing (BAU)","Order Split · PO Priority: blank = BAU, TEST = Test & React",{list:"Test & React · ASOS General Testing (BAU)",sample:1}),
+  F("Category","rule","Clothing","Buying Group \"Miss Selfridge WB\" is on the clothing list",{list:"Clothing · Footwear · Non-clothing"}),
+  F("Division","rule","Womenswear","Attributes · Website Gender = Women",{list:"Menswear · Unisex · Womenswear",sample:1}),
+  F("Brand","po","Miss Selfridge","PO Brand \"MISS SELF\", mapped to the drop-down value",{list:BRANDS.join(" · ")}),
+  F("Department (Category = CLOTHING)","po","Miss Selfridge WB","PO Buying Group No \"534 - Miss Selfridge WB\", code removed"),
+  F("Option ID","po","157382210","PO Option ID"),
+  F("PO Number","po","500037765601","PO Number"),
+  F("Product Description","po","Miss Selfridge ribbed cardigan and cami set in buttermilk","PO Description"),
+  F("Element/Component","plm","Shell","BOM · Element/Component",{sample:1,added:1}),
+  F("Colour(s)","po","YELLOW (buttermilk)","PO Reporting Colour, Website Colour in brackets"),
+  F("Claimed Fiber Content","plm","70% Viscose, 30% Nylon","Material Library · Composition",{sample:1}),
+  F("Claimed Weight","plm","240 gsm","Material Library · Weight (Before Wash)",{sample:1}),
+  F("Proposed Wash Care","sup","","Supplier selects",{key:"care",input:CARE,list:"Testing manual (being updated)"}),
+  F("Country of Origin (of tested item)","plm","China","Material Library · Mill Country",{sample:1,list:"All countries"}),
+  F("Promotion Claims","pend","Awaiting PLM attribute","To be added to PLM or the PO (PO raising workshop)",{list:"Claims from the testing manual"}),
+  F("Is product circular collection","rule","No","Attributes · Sustainable Design: Design for Durability = Yes",{sample:1,list:"Yes · No"}),
+  F("Sub Category","rule","Fabric","Fixed for Stage 1",{list:"Garment · Fabric · Trim/Component"}),
+  F("Test Stage","sup","","Supplier selects",{key:"stage",input:STAGE,list:"Field review"})
+ ]},
+ {t:"ASOS supplier information", f:[
+  F("Supplier Name","po","Indochine International Hong Kong","PO Supplier Details"),
+  F("Supplier ID","plm","S1xxxx","Supplier record · ID",{sample:1}),
+  F("Email","plm","(supplier login email)","Supplier login email address",{sample:1})
+ ]},
+ {t:"Factory information", f:[
+  F("Factory Name","po","Enra","PO Factory Name",{list:"Factories linked to the supplier"}),
+  F("Factory ID","po","F106375","PO Factory ID")
+ ]},
+ {t:"Invoice information", invoice:true, f:[
+  F("Invoice To","sup","","Supplier selects",{key:"invto",input:PAYER,list:"Suggested: Supplier · Applicant · ASOS · Other"}),
+  F("Invoice Company Name","sup","","Supplier types",{key:"invname",input:"text"}),
+  F("Address","sup","","Supplier types",{key:"invaddr",input:"text"}),
+  F("City","sup","","Supplier types",{key:"invcity",input:"text"}),
+  F("State/Province","sup","","Supplier types",{key:"invstate",input:"text"}),
+  F("Country","sup","","Supplier selects",{key:"invcountry",input:COUNTRIES,list:"All countries"}),
+  F("Contact Person","sup","","Supplier types",{key:"invcontact",input:"text"}),
+  F("Email","sup","","Supplier types",{key:"invemail",input:"text"}),
+  F("Telephone","sup","","Supplier types",{key:"invtel",input:"text"})
+ ]},
+ {t:"Component level testing information · #1 Fabric", f:[
+  F("Quality Reference","plm","MAT-1xxxxx","Material Library · ASOS Material Ref",{sample:1}),
+  F("Supplier Fabric Reference","plm","INDO-RIB-240","Material Library · Supplier/Mill Material Ref",{sample:1}),
+  F("Mill Name","plm","(mill name)","Material Library · Mill",{sample:1}),
+  F("Material Description","plm","Rib knit, piece dyed","Material Library · Description",{sample:1}),
+  F("Material Type","plm","Weft knit","Material Library · Material Type",{sample:1,added:1}),
+  F("Test Standard","pend",STD[0],"Proposed rule: Material Type picks the testing matrix table",{list:"Testing matrix tables"}),
+  F("Is the Fabric/Garment Raised","sup","","Supplier selects",{key:"raised",input:YN,list:"Yes · No"}),
+  F("Wash Recipe","sup","","Supplier types",{key:"recipe",input:"text"}),
+  F("Coated Fabric","rule","No","Material Library · Construction: Faux leather/PU = Yes",{sample:1,list:"Yes · No"})
+ ]}
+];
+const SRC={po:["PO","From the PO","var(--po)"],plm:["PLM","From PLM","var(--plm)"],rule:["RULE","Worked out by rule","var(--rule)"],sup:["SUPPLIER","Supplier completes","var(--sup)"],pend:["PENDING","Decision needed","var(--pend)"]};
+const SAVED={invto:"Supplier",invname:"Indochine International Hong Kong",invaddr:"Room 1801-1802, 18/F, Midas Plaza, 1 Tai Yau Street",invcity:"San Po Kong, Kowloon",invstate:"Hong Kong",invcountry:"Hong Kong",invcontact:"Accounts",invemail:"(saved)",invtel:"(saved)"};
+const FILL=Object.assign({lab:LABS[1],service:SERVICE[0],care:CARE[0],stage:"Bulk",raised:"No",recipe:"Normal"},SAVED);
+const state={ans:{},filter:null,profile:""};
+const esc=v=>String(v??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const all=()=>SECTIONS.flatMap(s=>s.f);
+const val=f=>f.src==="sup"?(state.ans[f.key]||""):f.value;
+
+function renderBar(){
+  const c={po:0,plm:0,rule:0,sup:0,pend:0}; all().forEach(f=>c[f.src]++);
+  const dd=all().filter(f=>f.src==="sup"&&Array.isArray(f.input)).length;
+  const sub={po:"from the PO",plm:"from PLM",rule:"worked out by rule",sup:`supplier: ${dd} drop-down, ${c.sup-dd} typed`,pend:"waiting on a decision"};
+  document.getElementById("srcbar").innerHTML=Object.keys(c).map(k=>`<button data-s="${k}" aria-pressed="${state.filter===k}"><b>${c[k]}</b><span><i class="k" style="background:${SRC[k][2]}"></i>${sub[k]}</span></button>`).join("")
+   +`<button data-s="" aria-pressed="${state.filter===null}"><b>${all().length}</b><span>fields in total · show all</span></button>`;
+  document.querySelectorAll("#srcbar button").forEach(b=>b.onclick=()=>{ state.filter=b.dataset.s||null; render(); });
+}
+function fieldHTML(f){
+  const v=val(f), dim=state.filter&&f.src!==state.filter?" dim":"";
+  let body;
+  if(f.src==="sup"){
+    const id="in-"+f.key;
+    body= f.input==="text" ? `<input id="${id}" data-k="${f.key}" type="text" value="${esc(v)}" placeholder="Type…">`
+      : `<select id="${id}" data-k="${f.key}"><option value="">Select…</option>${f.input.map(x=>`<option${x===v?" selected":""}>${esc(x)}</option>`).join("")}</select>`;
+    body+=`<span class="dd">${Array.isArray(f.input)?"Drop-down · "+esc(f.list||""):"Free text"}</span>`;
+  } else {
+    body=`<span class="v">${f.src==="pend"?`<i>${esc(v)}</i>`:esc(v)}${f.sample?'<span class="sample">sample</span>':""}</span><span class="p">${esc(f.from)}</span>`;
+  }
+  const empty=f.src==="sup"&&!v?" empty":"", locked=(f.src==="po"||f.src==="plm"||f.src==="rule")?" locked":"";
+  return `<div class="f${dim}${empty}${locked}"><span class="l"><span>${esc(f.label)}${f.added?' <span class="src s-pend">ADDED</span>':""}</span><span class="src s-${f.src}">${SRC[f.src][0]}</span></span>${body}</div>`;
+}
+function renderForm(){
+  document.getElementById("form").innerHTML=SECTIONS.map(s=>{
+    let h=`<div class="sec"><h3>${esc(s.t)}</h3>`;
+    if(s.invoice){ const dim=state.filter&&state.filter!=="sup"?" dim":"";
+      h+=`<div class="f${dim}${state.profile?"":" empty"}" style="border-top:0;max-width:440px"><span class="l"><span>Use saved invoice details</span><span class="src s-sup">SUPPLIER</span></span><select id="profile"><option value="">Select…</option><option${state.profile?" selected":""}>Indochine International (saved)</option></select><span class="dd">Optional: one pick fills all 9 invoice fields</span></div>`; }
+    return h+`<div class="grid">${s.f.map(fieldHTML).join("")}</div></div>`;
+  }).join("");
+  document.querySelectorAll("#form [data-k]").forEach(el=>el.addEventListener(el.tagName==="INPUT"?"input":"change",()=>{ state.ans[el.dataset.k]=el.value; renderSide(); if(el.tagName!=="INPUT") renderForm(); }));
+  document.getElementById("profile").onchange=e=>{ state.profile=e.target.value; if(state.profile) Object.assign(state.ans,SAVED); else Object.keys(SAVED).forEach(k=>state.ans[k]=""); render(); };
+}
+function renderSide(){
+  const fs=all(), n=fs.length, auto=fs.filter(f=>["po","plm","rule"].includes(f.src)).length;
+  const sup=fs.filter(f=>f.src==="sup"), done=sup.filter(f=>state.ans[f.key]).length, pend=fs.filter(f=>f.src==="pend").length;
+  document.getElementById("prog").innerHTML=`<i style="width:${auto/n*100}%;background:var(--plm)"></i><i style="width:${done/n*100}%;background:var(--sup)"></i><i style="width:${pend/n*100}%;background:var(--pend)"></i>`;
+  document.getElementById("pct").textContent=Math.round((auto+done)/n*100)+"% filled";
+  document.getElementById("progtxt").innerHTML=`${auto} filled automatically (PO, PLM, rules)<br>${done} of ${sup.length} supplier fields completed<br>${pend} pending a decision`;
+}
+function renderDD(){
+  const rows=all().filter(f=>f.list||Array.isArray(f.input));
+  document.getElementById("dd").innerHTML=rows.map(f=>{
+    const vals=Array.isArray(f.input)?f.input:String(f.list).split(" · ");
+    const fromList=Array.isArray(f.input)?(f.list||""):"Field review";
+    const who=`<span class="src s-${f.src}">${SRC[f.src][0]}</span>`;
+    return `<tr><td><b>${esc(f.label)}</b></td><td>${who}</td><td class="opts">${vals.map(v=>`<span>${esc(v)}</span>`).join("")}</td><td style="font-size:13px;color:var(--muted)">${esc(f.src==="sup"?fromList:(f.list&&Array.isArray(f.input)?f.list:"Set automatically; list kept for edits"))}</td></tr>`;
+  }).join("");
+}
+function render(){ renderBar(); renderForm(); renderSide(); }
+document.getElementById("today").textContent=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}).replace(/ /g,"-");
+document.getElementById("fill").onclick=()=>{ Object.assign(state.ans,FILL); state.profile="Indochine International (saved)"; render(); };
+document.getElementById("clear").onclick=()=>{ state.ans={}; state.profile=""; render(); };
+renderDD(); render();
+</script>
+</body>
+</html>
